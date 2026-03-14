@@ -48,9 +48,10 @@ enableInlineShortcodes = true
 [params]
   env = "production"
   title = "Chay 的博客"
-  description = "记录技术与生活"
+  description = ""
   defaultTheme = "auto"
   DateFormat = "2006年1月2日"
+  math = true
 
   ShowToc = true
   TocOpen = true
@@ -98,14 +99,16 @@ enableInlineShortcodes = true
   # 2. Markdown 渲染配置
   [markup.goldmark]
     [markup.goldmark.renderer]
-      unsafe = true  # 允许 HTML 标签
+      unsafe = true  # 允许HTML渲染
 
   # 3. 代码高亮配置
   [markup.highlight]
-    style = "abap"       # 代码高亮风格
     lineNos = true       # 显示行号
     codeFences = true
     guessSyntax = true
+    noClasses = false
+    style = "dracula"       # 代码高亮风格
+
 
 [privacy]
   [privacy.twitter]
