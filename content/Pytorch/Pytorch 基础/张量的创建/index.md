@@ -242,7 +242,7 @@ t_int = torch.full((2,), val, dtype=torch.int32)
 print(f"\n尝试将 3.9 填充到 int32: {t_int}")
 ```
 
-### 未初始化内存
+## 未初始化内存
 这类方法只分配内存空间，不进行任何数值写入。它们是速度最快的，但也是最危险的:
 ```
 torch.empty(*size, *, out=None, dtype=None, layout=torch.strided, device=None, requires_grad=False, pin_memory=False, memory_format=torch.contiguous_format) → Tensor

@@ -295,7 +295,8 @@ print(rep.data_ptr() == base.data_ptr())  # False
 # 非单例维度 (大小不为 1 的维度) 必须与目标形状完全匹配，不能通过 expand 改变其大小
 exp2 = base.expand(2, 4)  # The expanded size of the tensor (4) must match the existing size (2) at non-singleton dimension 1.  Target sizes: [2, 4].  Tensor sizes: [1, 2]
 ```
-## 合并
+
+# 合并
 用于将多个张量组合成一个更大的张量，常用于批量数据组装或特征拼接。
 
 | 函数 | 功能描述 | 关键参数 | 核心区别与要求 |
