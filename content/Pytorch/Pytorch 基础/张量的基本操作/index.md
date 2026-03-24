@@ -7,6 +7,16 @@ tags: ["Pytorch"]
 weight: 6
 ---
 
+# 类型与对象检查
+用于判断变量是否为 `Tensor` 或其具体数据类型。
+
+| 函数 | 描述 | 示例 |
+| :--- | :--- | :--- |
+| `torch.is_tensor(obj)` | 判断对象是否为 PyTorch Tensor | `torch.is_tensor(x)` |
+| `torch.is_floating_point(input)` | 判断 Tensor 是否为浮点类型 (float/double) | `torch.is_floating_point(x)` |
+| `torch.is_complex(input)` | 判断 Tensor 是否为复数类型 (complex) | `torch.is_complex(x)` |
+| `isinstance(x, torch.Tensor)` | Python 原生判断，效果同 `is_tensor` | `isinstance(x, torch.Tensor)` |
+
 # 形状变换
 改变张量的维度结构，但不改变数据总量（元素个数）。
 
@@ -524,4 +534,114 @@ print(a.dtype)  # float64
 # torch.from_numpy() 不会改变数据类型，而是严格继承
 t = torch.from_numpy(a)
 print(t.dtype)  # torch.float64
+```
+
+
+
+# Meshgrid 网格函数
+
+`torch.meshgrid` 用于将一组一维坐标向量扩展为多维坐标矩阵（笛卡尔积）。它是生成图像像素坐标、绘制等高线、评估函数曲面以及构建空间注意力机制的基础。
+
+```
+torch.meshgrid(*tensors, indexing=None)
+```
+
+| 模式 | 值 | 适用场景 | 维度规则 | 形状示例 (输入 x:3, y:2) |
+| :--- | :--- | :--- | :--- | :--- |
+| **矩阵索引** | `'ij'` | **深度学习推荐**<br>符合 (行, 列) 直觉，与数组索引一致。 | 第 $i$ 个输出的第 $i$ 维对应第 $i$ 个输入。 | `(3, 2)`<br>`(len(x), len(y))` |
+| **笛卡尔索引** | `'xy'` | **绘图/图像处理**<br>符合 matplotlib/numpy 默认习惯。<br>第一个维是高度(Y)，第二个是宽度(X)。 | 前两个输出的维度互换。<br>第 1 个输出对应 X (列)，第 2 个对应 Y (行)。 | `(2, 3)`<br>`(len(y), len(x))` |
+
+```
+import torch
+
+x = torch.tensor([1, 2, 3])   # [1, 2, 3] -> 代表宽度方向 (列)
+y = torch.tensor([10, 20])    # [10, 20] -> 代表高度方向 (行)
+
+# 规则：输出形状由输入顺序决定 (len(x), len(y))
+# grid_x: 每一行都是 x 的复制 (行不变，列变)
+# grid_y: 每一列都是 y 的复制 (列不变，行变)
+# 得到一个“平面上的所有点”：
+# (1,10) (2,10) (3,10)
+# (1,20) (2,20) (3,20)
+grid_x, grid_y = torch.meshgrid(x, y, indexing="ij")
+print(grid_x.shape) # torch.Size([3, 2])
+print(grid_y.shape) # torch.Size([3, 2])
+
+# X（横坐标铺开）
+print(grid_x)
+
+# tensor([[1, 1],
+#         [2, 2],
+#         [3, 3]])
+
+# Y（纵坐标铺开）
+print(grid_y)
+
+# tensor([[10, 20],
+#         [10, 20],
+#         [10, 20]])
+
+
+# 规则：输出形状由输入顺序互换决定 (len(y), len(x))
+# grid_x: 每一行都是 x 的复制 (行不变，列变 -> 横坐标沿水平方向变化)
+# grid_y: 每一列都是 y 的复制 (列不变，行变 -> 纵坐标沿垂直方向变化)
+# 得到一个“平面上的所有点”（转置视角）：
+# (1,10) (2,10) (3,10)  <- 第0行 (y=10)
+# (1,20) (2,20) (3,20)  <- 第1行 (y=20)
+grid_x, grid_y = torch.meshgrid(x, y, indexing="xy")
+print(grid_x.shape) # torch.Size([2, 3])
+print(grid_y.shape) # torch.Size([2, 3])
+
+# X（横坐标铺开）
+print(grid_x)
+# tensor([[1, 2, 3],
+#         [1, 2, 3]])
+
+# Y（纵坐标铺开）
+print(grid_y)
+# tensor([[10, 10, 10],
+#         [20, 20, 20]])
+
+# 验证：两种模式生成的坐标点集合是完全一样的，只是排列形状不同
+points_ij = torch.stack([grid_x, grid_y], dim=-1).reshape(-1, 2)
+points_xy = torch.stack([grid_x, grid_y], dim=-1).reshape(-1, 2)
+assert torch.equal(points_ij.sort(dim=0)[0], points_xy.sort(dim=0)[0]), "坐标点集合必须一致"
+```
+
+通过 `Meshgrid` 网格我们可以快速可视化 3D 函数:
+```
+import torch
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D  # 3D绘图
+
+# 串行采样
+# for x in range(-8,8,100): # 循环生成 x 坐标，100 个采样点
+#     for y in range(-8,8,100): # 循环生成 y 坐标，100 个采样点
+
+# meshgrid 方法
+x = torch.linspace(-8., 8., 100)
+y = torch.linspace(-8., 8., 100)
+x, y = torch.meshgrid(x, y, indexing='ij')
+
+
+z = torch.sqrt(x**2 + y**2)
+z = torch.sin(z) / z
+
+# 避免 z=0 时除0（中心点）
+z[z != z] = 1.0   # NaN 替换为 1（sinc(0)=1）
+
+x = x.numpy()
+y = y.numpy()
+z = z.numpy()
+
+fig = plt.figure()
+ax = fig.add_subplot(111, projection='3d')
+ax.plot_surface(x, y, z)
+
+ax.set_title("Sinc Function")
+ax.set_xlabel("X")
+ax.set_ylabel("Y")
+ax.set_zlabel("Z")
+
+plt.show()
 ```
